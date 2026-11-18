@@ -32,7 +32,7 @@ Este repo bloquea patrones conocidos antes del LLM y mide cuánto dejan pasar es
 
 | Problema | En la práctica | Aquí |
 |---|---|---|
-| Texto no confiable | Usuario o documento pegado llega directo al modelo | Inspección previa con 6 reglas |
+| Texto no confiable | Usuario o documento pegado llega directo al modelo | Normalización + 6 reglas (EN/ES) |
 | Sin visibilidad | No se sabe qué patrones llegan | Consola con KPIs y top reglas |
 | Falsa seguridad | “Tenemos filtro” sin medirlo | Batch con allow/block, precision y recall |
 
@@ -42,24 +42,22 @@ Este repo bloquea patrones conocidos antes del LLM y mide cuánto dejan pasar es
 
 ### `$ cat experimento.md`
 
-Detalle: [`docs/EXPERIMENT.md`](docs/EXPERIMENT.md) · 34 muestras sintéticas
+Detalle: [`docs/EXPERIMENT.md`](docs/EXPERIMENT.md) · muestras sintéticas
 
-| Métrica | Valor |
-|---|---:|
-| Permitidas | 18 (52.9%) |
-| Bloqueadas | 16 (47.1%) |
-| Accuracy | 70.6% |
-| Precision | 75.0% |
-| Recall | 66.7% |
+| Métrica | Principal antes (34) | Principal después (34) | Held-out después (24) |
+|---|---:|---:|---:|
+| Accuracy | 70.6% | 100.0% | 87.5% |
+| Precision | 75.0% | 100.0% | 100.0% |
+| Recall | 66.7% | 100.0% | 75.0% |
 
-| Categoría | Correctas |
-|---|---:|
-| Benignos | 12 / 12 |
-| Benignos ambiguos | 0 / 4 |
-| Ataques directos | 12 / 12 |
-| Evasión | 0 / 6 |
+| Categoría (principal) | Antes | Después |
+|---|---:|---:|
+| Benignos | 12 / 12 | 12 / 12 |
+| Benignos ambiguos | 0 / 4 | 4 / 4 |
+| Ataques directos | 12 / 12 | 12 / 12 |
+| Evasión | 0 / 6 | 6 / 6 |
 
-Top reglas: `system_override` 5 · `jailbreak` 5 · `exfil` 4 · `ignore_previous` 3 · `reveal_system` 3 · `role_swap` 1
+El set principal se usó para afinar las reglas; el held-out es la cifra comparable (3 ataques de 12 siguen pasando).
 
 ---
 
@@ -68,7 +66,7 @@ Top reglas: `system_override` 5 · `jailbreak` 5 · `exfil` 4 · `ignore_previou
 Detalle: [`docs/CONCLUSIONS.md`](docs/CONCLUSIONS.md)
 
 - Aprobaría: primera capa barata + gate de regresión en CI.
-- Rechazaría: venderlo como defensa completa (0/6 en evasión) o dejar `act as` / `api key` como bloqueo duro sin contexto.
+- Rechazaría: venderlo como defensa completa (el held-out aún deja pasar 3/12 ataques) o leer el 100% del set principal como desempeño real.
 
 ---
 
@@ -96,7 +94,7 @@ docker compose --profile batch run --rm batch
 docker compose --profile test run --rm test
 ```
 
-CI: `.github/workflows/ci.yml` → pytest + batch (`--fail-under 0.70`) + artifact de `results/`.
+CI: `.github/workflows/ci.yml` → pytest + batch principal (`--fail-under 0.95`) + batch held-out (`--fail-under 0.80`) + artifact de `results/`.
 
 ---
 

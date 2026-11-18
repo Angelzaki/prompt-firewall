@@ -18,7 +18,9 @@ jobs:
       - name: Pytest
         run: pytest -q
       - name: Batch sobre samples
-        run: python -m prompt_firewall batch --fail-under 0.70
+        run: python -m prompt_firewall batch --fail-under 0.95
+      - name: Batch held-out
+        run: python -m prompt_firewall batch --file samples/heldout.jsonl --out results/heldout --fail-under 0.80
       - name: Upload reporte
         uses: actions/upload-artifact@v4
         with:

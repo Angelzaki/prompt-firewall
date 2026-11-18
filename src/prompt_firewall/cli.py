@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     batch = sub.add_parser("batch")
     batch.add_argument("--file", default="samples/attacks.jsonl")
     batch.add_argument("--out", default="results")
-    batch.add_argument("--fail-under", type=float, default=0.70, help="accuracy mínima para salir con código 0")
+    batch.add_argument("--fail-under", type=float, default=0.95, help="accuracy mínima para salir con código 0")
     serve = sub.add_parser("serve")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8011)
