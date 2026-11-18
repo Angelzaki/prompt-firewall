@@ -21,6 +21,12 @@ jobs:
         run: python -m prompt_firewall batch --fail-under 0.95
       - name: Batch held-out
         run: python -m prompt_firewall batch --file samples/heldout.jsonl --out results/heldout --fail-under 0.80
+      - name: llm-ci-gates batch principal (PASS)
+        run: |
+          pip install "git+https://github.com/Angelzaki/llm-ci-gates.git"
+          python -m llm_ci_gates --metrics results/batch_report.json --thresholds ci/thresholds.yaml
+      - name: llm-ci-gates held-out (PASS)
+        run: python -m llm_ci_gates --metrics results/heldout/batch_report.json --thresholds ci/thresholds_heldout.yaml
       - name: Upload reporte
         uses: actions/upload-artifact@v4
         with:
