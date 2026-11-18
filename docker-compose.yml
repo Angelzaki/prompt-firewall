@@ -1,0 +1,20 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./results:/app/results
+
+  batch:
+    build: .
+    profiles: ["batch"]
+    volumes:
+      - ./results:/app/results
+      - ./samples:/app/samples:ro
+    command: ["batch"]
+
+  test:
+    build: .
+    profiles: ["test"]
+    entrypoint: ["pytest", "-q"]

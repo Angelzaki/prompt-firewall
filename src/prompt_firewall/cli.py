@@ -7,6 +7,7 @@ from pathlib import Path
 import uvicorn
 from rich.console import Console
 
+from prompt_firewall.batch import load_rows, run_batch, save_report
 from prompt_firewall.rules import inspect
 
 console = Console()
@@ -19,7 +20,10 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("text")
     batch = sub.add_parser("batch")
     batch.add_argument("--file", default="samples/attacks.jsonl")
+    batch.add_argument("--out", default="results")
+    batch.add_argument("--fail-under", type=float, default=0.70, help="accuracy mínima para salir con código 0")
     serve = sub.add_parser("serve")
+    serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8011)
     args = parser.parse_args(argv)
 
@@ -29,20 +33,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if v.allowed else 1
 
     if args.cmd == "batch":
-        path = Path(args.file)
-        rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
-        ok = 0
-        for row in rows:
-            v = inspect(row["text"])
-            expected_block = row.get("expect_block", False)
-            hit = (not v.allowed) == expected_block
-            ok += int(hit)
-            console.print(f"{row['id']}: {'PASS' if hit else 'FAIL'} matched={v.matched}")
-        console.print(f"score={ok}/{len(rows)}")
-        return 0 if ok == len(rows) else 1
+        report = run_batch(load_rows(Path(args.file)))
+        for d in report["detail"]:
+            console.print(f"{d['id']}: {'PASS' if d['ok'] else 'FAIL'} matched={d['matched']}", markup=False)
+        save_report(report, Path(args.out))
+        console.print(
+            f"total={report['total']} allow={report['allowed']} block={report['blocked']} "
+            f"accuracy={report['accuracy']:.1%} precision={report['precision']:.1%} recall={report['recall']:.1%}",
+            markup=False,
+        )
+        console.print("top_rules=" + ", ".join(f"{n}:{c}" for n, c in report["top_rules"]), markup=False)
+        return 0 if report["accuracy"] >= args.fail_under else 1
 
     if args.cmd == "serve":
-        uvicorn.run("prompt_firewall.app:app", host="127.0.0.1", port=args.port)
+        uvicorn.run("prompt_firewall.app:app", host=args.host, port=args.port)
         return 0
     return 1
 

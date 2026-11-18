@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-and-batch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e .
+      - name: Pytest
+        run: pytest -q
+      - name: Batch sobre samples
+        run: python -m prompt_firewall batch --fail-under 0.70
+      - name: Upload reporte
+        uses: actions/upload-artifact@v4
+        with:
+          name: prompt-firewall-batch
+          path: results/
